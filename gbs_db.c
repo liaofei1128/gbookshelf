@@ -3,11 +3,11 @@
 sqlite3 *g_db_ctx = NULL;
 
 static char *g_sql_create[] = {
-    "CREATE TABLE if not exists gbs_format (format text not null, description text, primary key(format))",
-    "CREATE TABLE if not exists gbs_language (language text not null, description text, primary key(language))",
-    "CREATE TABLE if not exists gbs_publisher (publisher text not null, website text, description text, primary key(publisher))",
-    "CREATE TABLE if not exists gbs_genre (genre text not null, subgenre text not null, aliases text, primary key(genre, subgenre))",
-    "CREATE TABLE if not exists gbs_book (id text not null, md5 text not null, title text not null, subtitle text, "
+    "CREATE TABLE if not exists gbs_format (id integer autoincrement, format text not null, description text, primary key(id))",
+    "CREATE TABLE if not exists gbs_language (id integer autoincrement, language text not null, description text, primary key(id))",
+    "CREATE TABLE if not exists gbs_publisher (id integer autoincrement, publisher text not null, website text, description text, primary key(id))",
+    "CREATE TABLE if not exists gbs_genre (id integer autoincrement, path text not null, genre text not null, keywords text not null, primary key(id))",
+    "CREATE TABLE if not exists gbs_book (id integer autoincrement, md5 text not null, title text not null, subtitle text, "
         "isbn text, format text not null, genre text not null, subgenre text, "
         "language text, date text, version text, series text, volume text,"
         "publisher text, path text, contents text, introduction text, "
@@ -98,8 +98,8 @@ int gbs_db_insert_genre(sqlite3 *db, gbs_genre_t *gen)
     char *msg = NULL;
     mbs_t sql = NULL;
 
-    mbscatfmt(&sql, "INSERT INTO gbs_genre(genre, subgenre, aliases) VALUES ('%s', '%s', '%s')", 
-        gen->genre, gen->subgenre, gen->aliases);
+    mbscatfmt(&sql, "INSERT INTO gbs_genre(path, genre, keywords) VALUES ('%s', '%s', '%s')",
+        gen->path, gen->genre, gen->keywords);
     gbs_debug("%s\n", sql);
     if (sqlite3_exec(db, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);

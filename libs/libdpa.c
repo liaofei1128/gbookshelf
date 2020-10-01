@@ -370,3 +370,13 @@ void *dpa_at(dpa_t *dpa, int idx)
     return NULL;
 }
 
+void dpa_clean(dpa_t *dpa, void (*free_func)(void *item))
+{
+    while (1) {
+        void *item = dpa_pop(dpa);
+        if (item == NULL)
+            break;
+        if (free_func) free_func(item);
+    }
+}
+

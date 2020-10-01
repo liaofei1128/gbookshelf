@@ -40,5 +40,7 @@ extern int dpa_sort(dpa_t *dpa, dpa_cmp_t cmp);
 extern int dpa_push(dpa_t *dpa, void *obj);
 extern void *dpa_pop(dpa_t *dpa);
 extern void *dpa_at(dpa_t *dpa, int idx);
+extern void dpa_clean(dpa_t *dpa, void (*free_func)(void *item));
+
 
 #endif

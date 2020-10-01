@@ -67,26 +67,31 @@ static inline char *gbs_err(int err)
 }
 
 typedef struct gbs_genre_name_st {
-    const char *genre;
-    const char *aliases; // we can guess the genre of the input file by its filename.
+    char *path;
+    char *genre;
+    char *keywords; // we can guess the genre of the input file by its filename.
 } gbs_genre_name_t;
 
 
 typedef struct gbs_genre_st {
+    int id;
+    mbs_t path;
     mbs_t genre;
-    mbs_t aliases; // we can guess the genre of the input file by its filename.
-    dpa_t _genre;
-    mdfa_t *_aliases;
+    mbs_t parent;
+    mbs_t fullpath;
+    mbs_t keywords; // we can guess the genre of the input file by its filename.
+    mdfa_t *pattern;
     struct list_head node;
 } gbs_genre_t;
 
 typedef struct gbs_publisher_name_st {
-    const char *publisher;
-    const char *website;
-    const char *description;
+    char *publisher;
+    char *website;
+    char *description;
 } gbs_publisher_name_t;
 
 typedef struct gbs_publisher_st {
+    int id;
     mbs_t publisher;
     mbs_t website;
     mbs_t description;
@@ -94,17 +99,19 @@ typedef struct gbs_publisher_st {
 } gbs_publisher_t;
 
 typedef struct gbs_format_st {
+    int id;
     mbs_t format;
     mbs_t description;
     struct list_head node;
 } gbs_format_t;
 
 typedef struct gbs_language_name_st {
-    const char *language;
-    const char *description;
+    char *language;
+    char *description;
 } gbs_language_name_t;
 
 typedef struct gbs_language_st {
+    int id;
     mbs_t language;
     mbs_t description;
     struct list_head node;
@@ -127,6 +134,7 @@ enum {
 };
 
 typedef struct gbs_book_st {
+    int id;
     int size;
     int pages;
     int scaned;                 /*< is this book scaned? */
