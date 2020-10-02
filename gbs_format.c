@@ -92,7 +92,7 @@ int gbs_format_default_init(void)
     gbs_format_t *fmt;
 
     for (fmt = g_default_formats; fmt->format; fmt++) {
-        gbs_format_insert(fmt->format, fmt->description);
+        gbs_db_insert_format(fmt->format, fmt->description);
     }
 
     return 0;

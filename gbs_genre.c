@@ -277,19 +277,28 @@ void gbs_genre_free(gbs_genre_t * genre)
 
 int gbs_genre_insert(char *path, char *genre, char *keywords)
 {
+    int ret;
     char *dirname = NULL;
-    gbs_genre_t *gen = gbs_genre_alloc();
+    gbs_genre_t *gen = NULL;
+
+    ret = db_genre_insert(path, genre, keywords);
+    if (ret < 0) {
+        return ret;
+    }
+
+    gen = gbs_genre_alloc();
     if (gen == NULL)
         return -GBS_ERROR_NOMEM;
 
-    gen->path = mbsnewescapesqlite(path);
-    gen->genre = mbsnewescapesqlite(genre);
+    gen->id = ret;
+    gen->path = mbsnew(path);
+    gen->genre = mbsnew(genre);
     parse_dirname(gen->path, &dirname);
     gen->parent = mbsnew(dirname);
     free(dirname);
     gen->fullpath = NULL;
     mbscatfmt(&gen->fullpath, "%s/%s", gen->path, gen->genre);
-    gen->keywords = mbsnewescapesqlite(keywords);
+    gen->keywords = mbsnew(keywords);
     gen->pattern = dfa_compile(keywords, REF_IGNORECASE);
     list_add_tail(&gen->node, &g_genre_list);
     dpa_append(&g_main_genres, mbsdup(gen->path), dpa_str_cmp, NULL);
@@ -299,16 +308,16 @@ int gbs_genre_insert(char *path, char *genre, char *keywords)
     return 0;
 }
 
-int gbs_genre_delete(char *genre)
+int gbs_genre_delete(char *path, char *genre)
 {
     gbs_genre_t *cur_genre, *next_genre;
 
     list_for_each_entry_safe(cur_genre, next_genre, &g_genre_list, node) {
-        if (!strcmp(cur_genre->genre, genre)) {
+        if (!strcmp(cur_genre->path, path) && !strcmp(cur_genre->genre, genre)) {
             list_del(&cur_genre->node);
             gbs_genre_free(cur_genre);
             g_genre_cnt--;
-            return 0;
+            return db_genre_delete(path, genre);
         }
     }
 
@@ -351,23 +360,14 @@ int gbs_genre_init(void)
 {
     INIT_LIST_HEAD(&g_genre_list);
     dpa_init(&g_main_genres, 40);
-    //gbs_genre_default_init();
     return 0;
 }
 
 void gbs_genre_fini(void)
 {
-    char *name;
     gbs_genre_t *cur_genre, *next_genre;
 
-    while (1) {
-        name = dpa_pop(&g_main_genres);
-        if (!name) {
-            break;
-        }
-        mbsfree(name);
-    }
-
+    dpa_clean(&g_main_genres, mbsfree);
     list_for_each_entry_safe(cur_genre, next_genre, &g_genre_list, node) {
         list_del(&cur_genre->node);
         gbs_genre_free(cur_genre);

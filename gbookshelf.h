@@ -372,7 +372,7 @@ extern unsigned int g_genre_cnt;
 extern struct list_head g_genre_list;
 extern gbs_genre_t *gbs_genre_alloc(void);
 extern void gbs_genre_free(gbs_genre_t *genre);
-extern int gbs_genre_insert(char *genre, char *subgenre, char *aliases);
+extern int gbs_genre_insert(char *path, char *genre, char *keywords);
 extern int gbs_genre_delete(char *genre, char *subgenre);
 extern int gbs_genre_default_init(void);
 extern void gbs_genre_dump(void);
@@ -436,13 +436,13 @@ extern GtkTreeModel *gbs_language_create_model(void);
 extern void gbs_language_update_tree_model(GtkTreeStore *treestore);
 extern void gbs_language_combox_append(GtkComboBox *combo);
 /* gbs_db.c */
-extern int gbs_db_create(sqlite3 *db);
-extern int gbs_db_insert_format(sqlite3 *db, gbs_format_t *fmt);
-extern int gbs_db_insert_language(sqlite3 *db, gbs_language_t *lang);
-extern int gbs_db_insert_publisher(sqlite3 *db, gbs_publisher_t *pub);
-extern int gbs_db_insert_genre(sqlite3 *db, gbs_genre_t *genre);
-extern int gbs_db_insert_book(sqlite3 *db, gbs_book_t *book);
-extern int gbs_db_write(char *filename);
+extern int db_create(sqlite3 *db);
+extern int db_format_insert(sqlite3 *db, char *format, char *description);
+extern int db_language_insert(sqlite3 *db, char *language, char *description);
+extern int db_publisher_insert(sqlite3 *db, char *publisher, char *website, char *description);
+extern int db_genre_insert(sqlite3 *db, char *path, char *genre, char *keywords);
+extern int db_book_insert(sqlite3 *db, gbs_book_t *book);
+extern int db_write(char *filename);
 extern int gbs_db_read(char *filename);
 
 #endif
