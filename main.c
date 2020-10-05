@@ -553,7 +553,7 @@ static void gbs_menu_dummy(gchar * string)
     printf("%s\n", string);
 }
 
-int gbs_create_menu(GtkWidget * headbox)
+static int gtk_create_menu(GtkWidget * headbox)
 {
     GtkWidget *gbs_menubar;
     GtkWidget *menu, *menu_item;
@@ -739,7 +739,7 @@ int gbs_create_menu(GtkWidget * headbox)
     return 0;
 }
 
-static void gbs_create_toolbar(GtkWidget * headbox)
+static void gtk_create_toolbar(GtkWidget * headbox)
 {
     GtkWidget *gbs_toolbar;
     GtkToolItem *new_db;
@@ -937,7 +937,7 @@ void gbs_gtk_book_goto_last_page(GtkWidget * widget, gpointer data)
     gbs_gtk_booklist_update_model_last_page();
 }
 
-int gbs_create_layout(void)
+static int gtk_create_layout(void)
 {
     GtkWidget *layout;
     GtkWidget *head_box;
@@ -966,10 +966,10 @@ int gbs_create_layout(void)
     gtk_box_pack_start(GTK_BOX(layout), foot_box, FALSE, FALSE, 0);
 
     /* create the menu basr */
-    gbs_create_menu(head_box);
+    gtk_create_menu(head_box);
 
     /* create the tool basr */
-    gbs_create_toolbar(head_box);
+    gtk_create_toolbar(head_box);
 
     /* create the status basr */
     g_statusbar = gtk_statusbar_new();
@@ -1147,7 +1147,7 @@ int main(int argc, char *argv[])
     gtk_window_set_position(GTK_WINDOW(g_window), GTK_WIN_POS_CENTER);
     gtk_window_set_icon(GTK_WINDOW(g_window), gbs_logo_create_pixbuf());
 
-    gbs_create_layout();
+    gtk_create_layout();
 
     g_signal_connect_swapped(G_OBJECT(g_window), "destroy", G_CALLBACK(gbs_menu_quit_response), NULL);
 

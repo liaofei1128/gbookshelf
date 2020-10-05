@@ -9,7 +9,7 @@ static char *g_sql_tables[] = {
     "CREATE TABLE if not exists gbs_genre (id INTEGER AUTOINCREMENT, path TEXT NOT NULL, genre TEXT NOT NULL, keywords TEXT NOT NULL, PRIMARY KEY(id))",
     "CREATE TABLE if not exists gbs_book (id INTEGER AUTOINCREMENT, md5 TEXT NOT NULL, title TEXT NOT NULL, subtitle TEXT, "
         "isbn TEXT, format TEXT NOT NULL, genre TEXT NOT NULL, subgenre TEXT, "
-        "language TEXT, date TEXT, version TEXT, series TEXT, volume TEXT,"
+        "language TEXT, date TEXT, version TEXT, series TEXT, volume TEXT, "
         "publisher TEXT, path TEXT, contents TEXT, introduction TEXT, "
         "pages INT, size INT, scaned INT, years INT, popular INT, price DOUBLE, "
         "authors TEXT, keywords TEXT, urls TEXT, customs TEXT, repository TEXT, "
@@ -95,6 +95,31 @@ int db_format_insert(char *format, char *description)
     return ret;
 }
 
+int db_format_delete(char *format)
+{
+    int ret = 0;
+    char *msg = NULL;
+    mbs_t sql = NULL;
+
+    if (g_db_ctx == NULL) {
+        gbs_error("db context is null.\n");
+        return -EINVAL;
+    }
+
+    mbs_t format = mbsnewescapesqlite(format);
+    mbscatfmt(&sql, "DELETE FROM gbs_format WHERE format = '%s';", format);
+    mbsfree(format);
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
+        gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
+        sqlite3_free(msg);
+        ret = -GBS_ERROR_DB;
+    }
+
+    gbs_debug("%s: %d\n", sql, ret);
+    mbsfree(sql);
+    return ret;
+}
+
 int db_language_insert(char *language, char *description)
 {
     int ret = 0;
@@ -113,6 +138,31 @@ int db_language_insert(char *language, char *description)
     mbsfree(language);mbsfree(description);
     gbs_debug("%s\n", sql);
     if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+        gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
+        sqlite3_free(msg);
+        ret = -GBS_ERROR_DB;
+    }
+
+    mbsfree(sql);
+    return ret;
+}
+
+int db_language_delete(char *language)
+{
+    int ret = 0;
+    char *msg = NULL;
+    mbs_t sql = NULL;
+
+    if (g_db_ctx == NULL) {
+        gbs_error("db context is null.\n");
+        return -EINVAL;
+    }
+
+    mbs_t language = mbsnewescapesqlite(language);
+    mbscatfmt(&sql, "DELETE FROM gbs_language WHERE language = '%s';", language);
+    mbsfree(language);
+    gbs_debug("%s\n", sql);
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
@@ -141,6 +191,31 @@ int db_publisher_insert(char *publisher, char *website, char *description)
     mbsfree(publisher); mbsfree(website);mbsfree(description);
     gbs_debug("%s\n", sql);
     if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+        gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
+        sqlite3_free(msg);
+        ret = -GBS_ERROR_DB;
+    }
+
+    mbsfree(sql);
+    return ret;
+}
+
+int db_publisher_delete(char *publisher)
+{
+    int ret = 0;
+    char *msg = NULL;
+    mbs_t sql = NULL;
+
+    if (g_db_ctx == NULL) {
+        gbs_error("db context is null.\n");
+        return -EINVAL;
+    }
+
+    mbs_t publisher = mbsnewescapesqlite(publisher);
+    mbscatfmt(&sql, "DELETE FROM gbs_publisher WHERE publisher = '%s';", publisher);
+    mbsfree(publisher);
+    gbs_debug("%s\n", sql);
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
@@ -219,20 +294,20 @@ int db_book_insert(gbs_book_t *book)
 
     mbscatfmt(&sql,
         "INSERT INTO gbs_book(md5, title, subtitle, isbn, format, genre, subgenre, language, date, version, series, publisher, customs, path, contents, introduction, authors, keywords, urls, pages, size, scaned, years, popular, price, quality, doi, libgenid, repository, ctime, mtime)"
-        "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%.4f', '%d', '%s', '%s', '%s', '%ld', '%ld')",
+        "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%.4f', '%d', '%s', '%s', '%s', '%ld', '%ld'); SELECT LAST_INSERT_ROWID() FROM gbs_book;",
         book->md5, book->title, book->subtitle, book->isbn, book->format, book->genre, book->subgenre, book->language, book->date,
         book->version, book->series, book->publisher, book->customs, book->path, book->contents, book->introduction, book->authors,
         book->keywords, book->urls, book->pages, book->size, book->scaned, book->years, book->popular, book->price, book->quality,
         book->doi, book->libgenid, book->repository, book->ctime, book->mtime);
     gbs_debug("%s\n", sql);
-    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
+    if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
     }
 
     mbsfree(sql);
-    return 0;
+    return ret;
 }
 
 int db_write(char *filename)
