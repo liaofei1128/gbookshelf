@@ -70,7 +70,7 @@ int gbs_language_default_init(void)
     gbs_language_name_t *lang;
 
     for (lang = g_default_languages; lang->language; lang++) {
-        gbs_db_insert_language(lang->language, lang->description);
+        db_language_insert(lang->language, lang->description);
     }
 
     return 0;

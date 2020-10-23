@@ -436,13 +436,13 @@ extern GtkTreeModel *gbs_language_create_model(void);
 extern void gbs_language_update_tree_model(GtkTreeStore *treestore);
 extern void gbs_language_combox_append(GtkComboBox *combo);
 /* gbs_db.c */
-extern int db_create(sqlite3 *db);
-extern int db_format_insert(sqlite3 *db, char *format, char *description);
-extern int db_language_insert(sqlite3 *db, char *language, char *description);
-extern int db_publisher_insert(sqlite3 *db, char *publisher, char *website, char *description);
-extern int db_genre_insert(sqlite3 *db, char *path, char *genre, char *keywords);
-extern int db_book_insert(sqlite3 *db, gbs_book_t *book);
-extern int db_write(char *filename);
+extern int db_open(char *filename);
+extern int db_format_insert(char *format, char *description);
+extern int db_language_insert(char *language, char *description);
+extern int db_publisher_insert(char *publisher, char *website, char *description);
+extern int db_genre_insert(char *path, char *genre, char *keywords);
+extern int db_book_insert(gbs_book_t *book);
+extern int db_close(void);
 extern int gbs_db_read(char *filename);
 
 #endif

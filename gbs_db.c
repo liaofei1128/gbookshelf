@@ -50,22 +50,44 @@ int db_open(char *filename)
         i++;
     }
 
-    if (!exist) {
-        gbs_language_default_init();
-        gbs_format_default_init();
-        gbs_genre_default_init();
-    }
-
     return 0;
 }
 
-int get_last_rowid(void *arg, int argc, char **argv, char **colname)
+int db_count(char *tbl)
 {
-    int *prowid = (int *)arg;
-    if (prowid) {
-        *prowid = strtol(argv[0], NULL, 0);
-    }
+    int ret = -1;
+    char *msg = NULL;
+    mbs_t sql = NULL;
+    sqlite3_stmt *stmt = NULL;
 
+    mbscatfmt(&sql, "SELECT COUNT(*) FROM %s;", tbl);
+    if (sqlite3_prepare_v2(g_db_ctx, sql, -1, &stmt, NULL) == SQLITE_OK) {
+        while(sqlite3_step(stmt) == SQLITE_ROW) {
+            ret = sqlite3_column_int(stmt, 0);
+            break;
+        }
+    } else {
+        gbs_error("invalid sql: %s\n", sql);
+        ret = -1;
+    }
+    mbsfree(sql);
+    return ret;
+}
+
+int db_init(void)
+{
+    if (db_count("gbs_language") == 0) {
+        gbs_language_default_init();
+    }
+    if (db_count("gbs_format") == 0) {
+        gbs_format_default_init();
+    }
+    if (db_count("gbs_publisher") == 0) {
+        gbs_publisher_default_init();
+    }
+    if (db_count("gbs_genre") == 0) {
+        gbs_genre_default_init();
+    }
     return 0;
 }
 
@@ -82,17 +104,16 @@ int db_format_insert(char *format, char *description)
 
     mbs_t format = mbsnewescapesqlite(format);
     mbs_t description = mbsnewescapesqlite(description);
-    mbscatfmt(&sql, "INSERT INTO gbs_format(format, description) VALUES ('%s', '%s'); SELECT LAST_INSERT_ROWID() FROM gbs_format;", format, description);
+    mbscatfmt(&sql, "INSERT INTO gbs_format(format, description) VALUES ('%s', '%s');", format, description);
     mbsfree(format);mbsfree(description);
-    if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
     }
 
-    gbs_debug("%s: %d\n", sql, ret);
     mbsfree(sql);
-    return ret;
+    return sqlite3_last_insert_rowid(g_db_ctx);
 }
 
 int db_format_delete(char *format)
@@ -115,7 +136,6 @@ int db_format_delete(char *format)
         ret = -GBS_ERROR_DB;
     }
 
-    gbs_debug("%s: %d\n", sql, ret);
     mbsfree(sql);
     return ret;
 }
@@ -133,18 +153,17 @@ int db_language_insert(char *language, char *description)
 
     mbs_t language = mbsnewescapesqlite(language);
     mbs_t description = mbsnewescapesqlite(description);
-    mbscatfmt(&sql, "INSERT INTO gbs_language(language, description) VALUES ('%s', '%s'); SELECT LAST_INSERT_ROWID() FROM gbs_format;",
-        language, description);
+    mbscatfmt(&sql, "INSERT INTO gbs_language(language, description) VALUES ('%s', '%s');", language, description);
     mbsfree(language);mbsfree(description);
     gbs_debug("%s\n", sql);
-    if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
     }
 
     mbsfree(sql);
-    return ret;
+    return sqlite3_last_insert_rowid(g_db_ctx);
 }
 
 int db_language_delete(char *language)
@@ -186,18 +205,17 @@ int db_publisher_insert(char *publisher, char *website, char *description)
     mbs_t publisher = mbsnewescapesqlite(publisher);
     mbs_t website = mbsnewescapesqlite(website);
     mbs_t description = mbsnewescapesqlite(description);
-    mbscatfmt(&sql, "INSERT INTO gbs_publisher(publisher, website, description) VALUES ('%s', '%s', '%s'); SELECT LAST_INSERT_ROWID() FROM gbs_format;",
-        publisher, website, description);
+    mbscatfmt(&sql, "INSERT INTO gbs_publisher(publisher, website, description) VALUES ('%s', '%s', '%s');", publisher, website, description);
     mbsfree(publisher); mbsfree(website);mbsfree(description);
     gbs_debug("%s\n", sql);
-    if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
     }
 
     mbsfree(sql);
-    return ret;
+    return sqlite3_last_insert_rowid(g_db_ctx);
 }
 
 int db_publisher_delete(char *publisher)
@@ -239,18 +257,17 @@ int db_genre_insert(char *path, char *genre, char *keywords)
     mbs_t path = mbsnewescapesqlite(path);
     mbs_t genre = mbsnewescapesqlite(genre);
     mbs_t keywords = mbsnewescapesqlite(keywords);
-    mbscatfmt(&sql, "INSERT INTO gbs_genre(path, genre, keywords) VALUES ('%s', '%s', '%s'); SELECT LAST_INSERT_ROWID() FROM gbs_format;", path, genre, keywords);
+    mbscatfmt(&sql, "INSERT INTO gbs_genre(path, genre, keywords) VALUES ('%s', '%s', '%s');", path, genre, keywords);
     mbsfree(path);mbsfree(genre);mbsfree(keywords);
 
-    if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
     }
 
-    gbs_debug("%s\n", sql);
     mbsfree(sql);
-    return ret;
+    return sqlite3_last_insert_rowid(g_db_ctx);
 }
 
 int db_genre_delete(char *path, char *genre)
@@ -275,7 +292,6 @@ int db_genre_delete(char *path, char *genre)
         ret = -GBS_ERROR_DB;
     }
 
-    gbs_debug("%s\n", sql);
     mbsfree(sql);
     return ret;
 }
@@ -294,13 +310,13 @@ int db_book_insert(gbs_book_t *book)
 
     mbscatfmt(&sql,
         "INSERT INTO gbs_book(md5, title, subtitle, isbn, format, genre, subgenre, language, date, version, series, publisher, customs, path, contents, introduction, authors, keywords, urls, pages, size, scaned, years, popular, price, quality, doi, libgenid, repository, ctime, mtime)"
-        "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%.4f', '%d', '%s', '%s', '%s', '%ld', '%ld'); SELECT LAST_INSERT_ROWID() FROM gbs_book;",
+        "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%.4f', '%d', '%s', '%s', '%s', '%ld', '%ld');",
         book->md5, book->title, book->subtitle, book->isbn, book->format, book->genre, book->subgenre, book->language, book->date,
         book->version, book->series, book->publisher, book->customs, book->path, book->contents, book->introduction, book->authors,
         book->keywords, book->urls, book->pages, book->size, book->scaned, book->years, book->popular, book->price, book->quality,
         book->doi, book->libgenid, book->repository, book->ctime, book->mtime);
     gbs_debug("%s\n", sql);
-    if (sqlite3_exec(g_db_ctx, sql, get_last_rowid, &ret, &msg) != SQLITE_OK) {
+    if (sqlite3_exec(g_db_ctx, sql, NULL, NULL, &msg) != SQLITE_OK) {
         gbs_error("sqlite3_exec: %s failed, msg %s\n", sql, msg);
         sqlite3_free(msg);
         ret = -GBS_ERROR_DB;
@@ -310,40 +326,15 @@ int db_book_insert(gbs_book_t *book)
     return ret;
 }
 
-int db_write(char *filename)
+int db_close(void)
 {
-    int ret = 0;
-    sqlite3 *db = NULL;
-
-    remove(filename);
-    if (sqlite3_open(filename, &db) != 0) {
-        gbs_error("Error: %s\n", sqlite3_errmsg(db));
-        return -GBS_ERROR_DB;
+    if (g_db_ctx) {
+        sqlite3_close(g_db_ctx);
+        g_db_ctx = NULL;
     }
 
-    ret = db_create(db);
-    if (ret < 0)
-        goto out;
-    ret = gbs_formart_foreach_write_db(db, gbs_db_insert_format);
-    if (ret < 0)
-        goto out;
-    ret = gbs_language_foreach_write_db(db, gbs_db_insert_language);
-    if (ret < 0)
-        goto out;
-    ret = gbs_genre_foreach_write_db(db, gbs_db_insert_genre);
-    if (ret < 0)
-        goto out;
-    ret = gbs_publisher_foreach_write_db(db, gbs_db_insert_publisher);
-    if (ret < 0)
-        goto out;
-    ret = gbs_book_foreach_write_db(db, gbs_db_insert_book);
-    if (ret < 0)
-        goto out;
-out:
-    sqlite3_close(db);
-    return ret;
+    return 0;
 }
-
 
 static int gbs_db_load_format_cb(void *NotUsed, int argc, char **argv,
     char **azColName)

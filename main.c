@@ -1,12 +1,13 @@
 #include "gbookshelf.h"
 
-static int g_sidebar_flag;      //*< 0: Genres, 1: Publishers */
+static int g_sidebar_flag;      //*< 0: hide, 1, Genres, 2: Publishers */
 static int g_modify_flag;
 static int g_book_pagesize;
 
 static gchar *g_db_filename;
 
 static GtkWidget *g_window;
+static GtkWidget *g_toolbar;
 static GtkWidget *g_statusbar;
 static GtkWidget *g_sidebar_treeview;
 static GtkWidget *g_book_treeview;
@@ -260,10 +261,15 @@ static void gbs_sidebar_treeview_selected(GtkWidget * widget, gpointer statusbar
 
 static void gbs_sidebar_treeview_header_clicked(GtkWidget * widget, gpointer sidebar)
 {
-    if (!g_sidebar_flag) {
+    switch (g_sidebar_flag) {
+    case 1:
         printf("resort the genres tree cells.\n");
-    } else {
+        break;
+    case 2:
         printf("resort the publisher tree cells.\n");
+        break;
+    default:
+        break;
     }
 }
 
@@ -321,14 +327,34 @@ GtkTreeModel *gbs_sidebar_update_tree_model(int flag)
 
 static void gbs_sidebar_genre_actived(void)
 {
-    g_sidebar_flag = 0;
+    g_sidebar_flag = 1;
     gbs_sidebar_update_tree_model(0);
 }
 
 static void gbs_sidebar_publisher_actived(void)
 {
-    g_sidebar_flag = 1;
+    g_sidebar_flag = 2;
     gbs_sidebar_update_tree_model(1);
+}
+
+static void gbs_sidebar_hide(void)
+{
+    gtk_widget_hide(g_sidebar_widget);
+}
+
+static void gbs_sidebar_show(void)
+{
+    switch(g_sidebar_flag) {
+    case 1:
+        gbs_sidebar_update_tree_model(0);
+        break;
+    case 2:
+        gbs_sidebar_update_tree_model(1);
+        break;
+    default:
+        break;
+    }
+    gtk_widget_show(g_sidebar_widget);
 }
 
 static void gbs_sidebar_treeview_create(GtkWidget * left_scroll_window)
@@ -553,7 +579,7 @@ static void gbs_menu_dummy(gchar * string)
     printf("%s\n", string);
 }
 
-static int gtk_create_menu(GtkWidget * headbox)
+static int gbs_create_menu(GtkWidget * headbox)
 {
     GtkWidget *gbs_menubar;
     GtkWidget *menu, *menu_item;
@@ -739,46 +765,45 @@ static int gtk_create_menu(GtkWidget * headbox)
     return 0;
 }
 
-static void gtk_create_toolbar(GtkWidget * headbox)
+static void gbs_create_toolbar(GtkWidget * headbox)
 {
-    GtkWidget *gbs_toolbar;
     GtkToolItem *new_db;
     GtkToolItem *open_db;
     GtkToolItem *save_db;
     GtkToolItem *sep;
     GtkToolItem *exit;
 
-    gbs_toolbar = gtk_toolbar_new();
-    gtk_toolbar_set_style(GTK_TOOLBAR(gbs_toolbar), GTK_TOOLBAR_ICONS);
-    //gtk_container_set_border_width(GTK_CONTAINER(gbs_toolbar), 0);
+    g_toolbar = gtk_toolbar_new();
+    gtk_toolbar_set_style(GTK_TOOLBAR(g_toolbar), GTK_TOOLBAR_ICONS);
+    //gtk_container_set_border_width(GTK_CONTAINER(g_toolbar), 0);
 
     /* Tool->New Database */
     new_db = gtk_tool_button_new_from_stock(GTK_STOCK_NEW);
     gtk_tool_button_set_label(GTK_TOOL_BUTTON(new_db), "New Database");
-    gtk_toolbar_insert(GTK_TOOLBAR(gbs_toolbar), new_db, -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(g_toolbar), new_db, -1);
     g_signal_connect(G_OBJECT(new_db), "clicked", G_CALLBACK(gbs_menu_new_response), NULL);
 
     /* Tool->Open Database */
     open_db = gtk_tool_button_new_from_stock(GTK_STOCK_OPEN);
     gtk_tool_button_set_label(GTK_TOOL_BUTTON(open_db), "Open Database");
-    gtk_toolbar_insert(GTK_TOOLBAR(gbs_toolbar), open_db, -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(g_toolbar), open_db, -1);
     g_signal_connect(G_OBJECT(open_db), "clicked", G_CALLBACK(gbs_menu_open_response), NULL);
 
     /* Tool->Save Database */
     save_db = gtk_tool_button_new_from_stock(GTK_STOCK_SAVE);
-    gtk_toolbar_insert(GTK_TOOLBAR(gbs_toolbar), save_db, -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(g_toolbar), save_db, -1);
     gtk_tool_button_set_label(GTK_TOOL_BUTTON(save_db), "Save Database");
     g_signal_connect(G_OBJECT(save_db), "clicked", G_CALLBACK(gbs_menu_save_response), NULL);
 
     sep = gtk_separator_tool_item_new();
-    gtk_toolbar_insert(GTK_TOOLBAR(gbs_toolbar), sep, -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(g_toolbar), sep, -1);
 
     exit = gtk_tool_button_new_from_stock(GTK_STOCK_QUIT);
-    gtk_toolbar_insert(GTK_TOOLBAR(gbs_toolbar), exit, -1);
+    gtk_toolbar_insert(GTK_TOOLBAR(g_toolbar), exit, -1);
     gtk_tool_button_set_label(GTK_TOOL_BUTTON(exit), "Quit");
     g_signal_connect(G_OBJECT(exit), "clicked", G_CALLBACK(gbs_menu_quit_response), NULL);
 
-    gtk_box_pack_start(GTK_BOX(headbox), gbs_toolbar, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(headbox), g_toolbar, FALSE, FALSE, 0);
     return;
 }
 
@@ -937,7 +962,7 @@ void gbs_gtk_book_goto_last_page(GtkWidget * widget, gpointer data)
     gbs_gtk_booklist_update_model_last_page();
 }
 
-static int gtk_create_layout(void)
+static int gbs_create_layout(void)
 {
     GtkWidget *layout;
     GtkWidget *head_box;
@@ -966,10 +991,10 @@ static int gtk_create_layout(void)
     gtk_box_pack_start(GTK_BOX(layout), foot_box, FALSE, FALSE, 0);
 
     /* create the menu basr */
-    gtk_create_menu(head_box);
+    gbs_create_menu(head_box);
 
     /* create the tool basr */
-    gtk_create_toolbar(head_box);
+    gbs_create_toolbar(head_box);
 
     /* create the status basr */
     g_statusbar = gtk_statusbar_new();
@@ -1147,7 +1172,7 @@ int main(int argc, char *argv[])
     gtk_window_set_position(GTK_WINDOW(g_window), GTK_WIN_POS_CENTER);
     gtk_window_set_icon(GTK_WINDOW(g_window), gbs_logo_create_pixbuf());
 
-    gtk_create_layout();
+    gbs_create_layout();
 
     g_signal_connect_swapped(G_OBJECT(g_window), "destroy", G_CALLBACK(gbs_menu_quit_response), NULL);
 
